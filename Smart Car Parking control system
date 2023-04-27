@@ -1,0 +1,189 @@
+#include <LiquidCrystal_I2C.h>
+#include <SoftwareSerial.h>
+#include <Servo.h>
+SoftwareSerial mySerial(10, 11);
+LiquidCrystal_I2C lcd(0x27, 16, 2); // set the LCD address to 0x27 for a 16 chars and 2 line display
+const int trig_1 = 2;
+const int echo_1 = 3;
+const int trig_2 = 4;
+const int echo_2 = 5;
+const int trig_3 = 6;
+const int echo_3 = 7;
+
+// Define the pins for the ultrasonic sensor used for the servo motor operation
+const int trigPin = 13;
+const int echoPin = 12;
+
+// Define the pin for the servo motor
+const int servoPin = 8;
+
+// Create a Servo object
+Servo myServo;
+
+float distance_in_CM_01 = 0, result_in_CM_01 = 0;
+float distance_in_CM_02 = 0, result_in_CM_02 = 0;
+float distance_in_CM_03 = 0, result_in_CM_03 = 0;
+float distance_in_CM_04 = 0, result_in_CM_04 = 0;
+long Time_1, Time_2, Time_3, Time_4;
+float car_1, car_2, car_3, car_4;
+float Distance_object_01 = 8.0, Distance_object_02 = 8.0, Distance_object_03 = 8.0, Distance_object_04 = 5.0;
+int total = 0, timer_count = 0;
+void setup()
+{
+  mySerial.begin(115200); 
+  /*  Function call in the Arduino programming language that sets the baud rate 
+  for serial communication between the Arduino board and another device*/
+  pinMode(trig_1, OUTPUT); /* Initialize the pin mode for all trig and echo connection*/
+  pinMode(trig_2, OUTPUT);
+  pinMode(trig_3, OUTPUT);
+  pinMode(echo_1, INPUT);
+  pinMode(echo_2, INPUT);
+  pinMode(echo_3, INPUT);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+    // Initialize the servo motor
+  myServo.attach(servoPin);
+    // Set the servo motor to its initial position
+  myServo.write(0);
+  digitalWrite(trig_1, LOW);
+  digitalWrite(trig_2, LOW);
+  digitalWrite(trig_3, LOW);
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("  IoT CAR PARK");
+  lcd.setCursor(0, 1);
+  lcd.print(" MONITOR SYSTEM");
+  delay(2000);
+  lcd.clear();
+}
+
+void loop()
+{
+  total = 0;
+  car_1 = sensor_1();
+  car_2 = sensor_2();
+  car_3 = sensor_3();
+  car_4 = sensor_4();
+  lcd.setCursor(0, 0);
+  lcd.print("CAR1:");
+  if (car_1 <= Distance_object_01)
+  {
+    lcd.print("OK ");
+  }
+  else
+  {
+    total += 1;
+  }
+  if (car_1 > Distance_object_01)   lcd.print("NO ");
+  lcd.print("CAR2:");
+  if (car_2 <= Distance_object_02)
+  {
+    lcd.print("OK ");
+  }
+  else
+  {
+    total += 1;
+  }
+  if (car_2 > Distance_object_02)   lcd.print("NO ");
+  lcd.setCursor(0, 1);
+  lcd.print("CAR3:");
+  if (car_3 <= Distance_object_03)
+  {
+    lcd.print("OK ");
+  }
+  else
+  {
+    total += 1;
+  }
+  if (car_3 > Distance_object_03)   lcd.print("NO ");
+  lcd.print("FREE:");
+  lcd.print(total);
+  if (timer_count >= 50)
+  {
+    mySerial.print('*');
+    mySerial.print(total);
+    mySerial  .println('#');
+    timer_count = 0;
+  }
+  timer_count += 1;
+  delay(200);
+
+  // Send an ultrasonic signal
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Measure the distance using the ultrasonic sensor - 4
+  long duration = pulseIn(echoPin, HIGH);
+  int distance = duration / 58;
+
+  // If the distance is less than 5cm, move the servo motor
+  if (distance < 5 && total != 0) {
+    // Move the servo motor to 90 degrees
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("  Welcome  ");
+    lcd.setCursor(0, 1);
+    lcd.print("  To Parking  ");
+    myServo.write(90);
+ 
+    delay(5000);
+    total--;
+    // Move the servo motor back to its original position
+    myServo.write(0);
+    delay(1000);
+  }else {
+     //Set the servo motor to its initial position
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("  Sorry ");  
+        lcd.setCursor(0, 1);
+        lcd.print("Parking is Full"); 
+    myServo.write(0);
+  }
+
+  // Wait for a short delay before taking the next reading
+  delay(100);
+}
+
+float sensor_1(void)
+{
+  digitalWrite(trig_1, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trig_1, LOW);
+  Time_1 = pulseIn(echo_1, HIGH);
+  distance_in_CM_01 = Time_1 * 0.034;
+  return result_in_CM_01 = distance_in_CM_01 / 2;
+}
+
+float sensor_2(void)
+{
+  digitalWrite(trig_2, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trig_2, LOW);
+  Time_2 = pulseIn(echo_2, HIGH);
+  distance_in_CM_02 = Time_2 * 0.034;
+  return result_in_CM_02 = distance_in_CM_02 / 2;
+}
+
+float sensor_3(void)
+{
+  digitalWrite(trig_3, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trig_3, LOW);
+  Time_3 = pulseIn(echo_3, HIGH);
+  distance_in_CM_03 = Time_3 * 0.034;
+  return result_in_CM_03 = distance_in_CM_03 / 2;
+}
+float sensor_4(void)
+{
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  Time_4 = pulseIn(echoPin, HIGH);
+  distance_in_CM_04 = Time_4 * 0.034;
+  return result_in_CM_04 = distance_in_CM_04 / 2;
+}
